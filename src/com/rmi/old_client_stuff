@@ -1,0 +1,38 @@
+fileServer.openBufferedReader(filename);
+            String line = fileServer.readLine(filename);
+            while (line != null){
+                System.out.println(line);
+                line = fileServer.readLine(filename);
+            }
+
+            System.out.println("************************\n\n");
+
+            File[] files = fileServer.listFolderContent("pippo/pluto");
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    System.out.print("dir:    ");
+                } else {
+                    System.out.print("file:    ");
+                }
+                System.out.println(file.getName());
+            }
+
+            System.out.println("************************\n\n");
+
+            //if (fileServer.deleteFile("pippo/pluto/delete.file")) System.out.println("Cancellato con successo");
+            //else System.out.println("NON CANCELLATO - ERRORE");
+
+            fileServer.copyFile("pippo/paperino/daCopiare.txt", "pippo/pluto/copiato.txt");
+
+
+
+Legends:
+
+start                               -       Start connection with main server\n
+pwd                                 -       Print full path to current directory\n
+ls <abs_path>                       -       List <abs_path> content\n
+read <fname>                        -       Read content of file (abs path)\n
+write <fname>                       -       Write a new file (ovewrite abs path)\n
+cp <fname_source> <fname_dest>      -       Copy file from source to dest (abs path)\n
+mv <fname_source> <fname_dest>      -       Move file from source ro dest (abs path)\n
+rm <fname>                          -       Delete file\n
