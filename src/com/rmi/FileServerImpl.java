@@ -133,7 +133,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
         System.out.println(root + " " + ip + ":" + port);
 
-        System.setProperty("java.rmi.server.hostname", "localhost");
+        System.setProperty("java.rmi.server.hostname", "192.168.0.10");
 
         try {
             FileServer RMIFileServer = new FileServerImpl(root, ip, port);
