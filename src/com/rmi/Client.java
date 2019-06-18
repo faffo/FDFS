@@ -31,7 +31,7 @@ public class Client {
     FileServer fileServer = null;
 
     private Client() {
-        ConfigReader configReader = new ConfigReader();
+        ConfigReader configReader = new ConfigReader("cfg/client.cfg");
         this.mainRoot = configReader.getMainServerRoot();
         this.mainServerIp = configReader.getMainServerIp();
         this.mainServerPort = configReader.getMainServerPort();
@@ -52,7 +52,7 @@ public class Client {
                 "## cp <fname_source> <fname_dest>      -       Copy file from source to dest (abs path)\n" +
                 "## mv <fname_source> <fname_dest>      -       Move file from source ro dest (abs path)\n" +
                 "## rm <fname>                          -       Delete file\n" +
-                "## rename <old_fname> <new_fname>      -       Rename file\n" +
+                //"## rename <old_fname> <new_fname>      -       Rename file\n" +
                 "## edit <fname>                        -       Edit File with default application\n" +
                 "## help                                -       Show this message\n" +
                 "#############################################################################################\n\n");

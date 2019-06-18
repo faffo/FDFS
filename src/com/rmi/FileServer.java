@@ -21,7 +21,7 @@ public interface FileServer extends Remote {
     boolean deleteFile(String filename) throws RemoteException, NotBoundException, FileNotFoundException;
     boolean copyFile(String fileFrom, String fileTo) throws IOException, NotBoundException;
     boolean moveFile(String fileFrom, String fileTo) throws IOException, NotBoundException;
-    void renameFile(String oldFname, String newFname) throws NotBoundException, FileNotFoundException, FileAlreadyExistsException, RemoteException;
+    //void renameFile(String oldFname, String newFname) throws NotBoundException, FileNotFoundException, FileAlreadyExistsException, RemoteException;
     byte[] getFile(String filename) throws  IOException, NotBoundException;
     void writeFileBytes(byte[] fileBytes, String filename) throws IOException, NotBoundException;
     boolean isDir(String path) throws RemoteException, NotBoundException;
