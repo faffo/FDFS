@@ -330,7 +330,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             File dir = new File(path);
             if (dir.exists()) {
                 if(dir.isDirectory()) {
-                    List<String> dirContent = null;
+                    List<String> dirContent = new ArrayList<>();
                     File[] files = dir.listFiles();
                     if(files!=null){
                         for (File file : files) {
