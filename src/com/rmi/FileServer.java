@@ -1,7 +1,6 @@
 package com.rmi;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NotDirectoryException;
@@ -16,7 +15,7 @@ public interface FileServer extends Remote {
     void writeLine(String filename, String line) throws IOException, NotBoundException;
     void writeFile(String filename, List<String> text) throws IOException, NotBoundException;
     BufferedReader openBufferedReader(String filename) throws IOException, NotBoundException;
-    File[] listFolderContent(String path) throws NotBoundException, RemoteException, NotDirectoryException, FileNotFoundException;
+    List<String> listFolderContent(String path) throws NotBoundException, RemoteException, NotDirectoryException, FileNotFoundException;
     boolean deleteFile(String filename) throws RemoteException, NotBoundException, FileNotFoundException;
     boolean copyFile(String fileFrom, String fileTo) throws IOException, NotBoundException;
     boolean moveFile(String fileFrom, String fileTo) throws IOException, NotBoundException;

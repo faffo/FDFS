@@ -9,10 +9,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private String root;
@@ -327,12 +324,34 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     }
 
     @Override // check
-    public File[] listFolderContent(String path) throws NotBoundException, RemoteException, NotDirectoryException, FileNotFoundException {
+    public List<String> listFolderContent(String path) throws NotBoundException, RemoteException, NotDirectoryException, FileNotFoundException {
         this.processPath(path);
         if(this.firstPathLocal){
             File dir = new File(path);
             if (dir.exists()) {
-                if(dir.isDirectory()) return dir.listFiles();
+                if(dir.isDirectory()) {
+                    List<String> dirContent = null;
+                    File[] files = dir.listFiles();
+                    if(files!=null){
+                        for (File file : files) {
+                            String fname = file.getName();
+                            if (file.isDirectory()) {
+                                fname += "    dir";
+                            } else {
+                                fname += "    file";
+                            }
+                            dirContent.add(fname);
+                        }
+                        if(this.main){
+                            List<String> rootNames = configReader.getSlaveRoots();
+                            // List<String> content = new ArrayList<String>(rootNames);
+                            dirContent.addAll(rootNames);
+                        }
+                        return dirContent;
+                    }
+
+
+                }
                 else throw new NotDirectoryException(dir + " (Not a directory");
             } else throw new FileNotFoundException(dir + " (Not a valid path)");
         } else {
@@ -340,6 +359,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             FileServer fileServer = findInterface(this.firstSplittedPath[1]);
             return fileServer.listFolderContent(subPath);
         }
+        return null;
     }
 
     @Override //check

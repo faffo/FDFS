@@ -133,17 +133,12 @@ public class Client {
                             } else {
                                 path = this.pwd;
                             }
-                            File[] files = this.fileServer.listFolderContent(path);
+                            List<String> files = this.fileServer.listFolderContent(path);
                             if (files == null) {
                                 throw new FileNotFoundException(path + " (No such file or directory)");
                             } else {
-                                for (File file : files) {
-                                    if (file.isDirectory()) {
-                                        System.out.print("dir:    ");
-                                    } else {
-                                        System.out.print("file:   ");
-                                    }
-                                    System.out.println(file.getName());
+                                for (String file : files) {
+                                    System.out.println(file);
                                 }
                             }
                             break;

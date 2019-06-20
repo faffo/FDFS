@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +17,8 @@ public class ConfigReader {
     private int mainServerPort;
     private Map<String, Map<String, String>> slaveServersMap;
     private Map<String, String> serverNames;
+
+    private String[] slaveRoots;
 
     public ConfigReader(String cfg_name) {
         //cfg_name = "cfg/server.cfg";
@@ -104,5 +107,14 @@ public class ConfigReader {
             }
         }
         return null;
+    }
+
+    public ArrayList<String> getSlaveRoots(){
+        ArrayList<String> slaveRoots = new ArrayList<>();
+        for(Map.Entry<String, Map<String, String>> entry : slaveServersMap.entrySet()) {
+            Map<String, String> values = entry.getValue();
+            slaveRoots.add(values.get("Root"));
+        }
+        return slaveRoots;
     }
 }
