@@ -62,7 +62,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                 throw new IllegalArgumentException("port must be between 1024 and 49151");
             }
         } catch (IllegalArgumentException e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
 
         this.main = this.root.equals(this.mainRoot) && this.serverIp.equals(this.mainServerIp) && this.port == this.mainServerPort;
@@ -335,10 +335,14 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                     if(files!=null){
                         for (File file : files) {
                             String fname = file.getName();
+                            String tabs = "\t";
+                            if(fname.length()<=8){
+                                tabs = "\t\t";
+                            }
                             if (file.isDirectory()) {
-                                fname += "\t" + "dir";
+                                fname += tabs + "dir";
                             } else {
-                                fname += "\t" + "file";
+                                fname += tabs + "file";
                             }
                             dirContent.add(fname);
                         }
@@ -346,7 +350,11 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                             List<String> rootNames = configReader.getSlaveRoots();
 
                             for(String name : rootNames){
-                                name += "\t" + "dir";
+                                String tabs = "\t";
+                                if(name.length()<=8){
+                                    tabs = "\t\t";
+                                }
+                                name += tabs + "dir";
                                 dirContent.add(name);
                             }
                             Collections.sort(dirContent);
