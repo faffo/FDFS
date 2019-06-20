@@ -52,7 +52,7 @@ public class Client {
                 "## cp <fname_source> <fname_dest>      -       Copy file from source to dest (abs path)\n" +
                 "## mv <fname_source> <fname_dest>      -       Move file from source ro dest (abs path)\n" +
                 "## rm <fname>                          -       Delete file\n" +
-                //"## rename <old_fname> <new_fname>      -       Rename file\n" +
+                "## mkdir <path>                        -       Create Directory\n" +
                 "## edit <fname>                        -       Edit File with default application\n" +
                 "## help                                -       Show this message\n" +
                 "#############################################################################################\n\n");
@@ -273,10 +273,24 @@ public class Client {
 
                             }
                             break;
+                        case "mkdir":
+                            if (argument == null) {
+                                throw new CommandArgumentNeededException("You need to specify fname");
+                            } else{
+                                String dir = getAbsolutePath(argument);
+                                if(this.fileServer.createDir(dir)){
+                                    System.out.println(dir + " Successfully created");
+                                } else {
+                                    System.out.println(dir + " Could not be created");
+                                }
+                            }
+                            break;
+                            /*
                         case "regshow":
                             //this.fileServer.getRegistry("pippo");
                             System.out.println(Arrays.toString(this.registry.list()));
                             break;
+                            */
                         case "start":
                         case "exit":
                         case "help":

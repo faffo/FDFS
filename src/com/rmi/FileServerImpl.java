@@ -20,8 +20,8 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private int port;
 
     private String mainRoot;
-    String mainServerIp;
-    int mainServerPort;
+    private String mainServerIp;
+    private int mainServerPort;
 
     private boolean main;
     private String path;
@@ -31,7 +31,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private boolean firstPathLocal;
     private boolean secondPathLocal;
 
-    File rootContent;
+    private File rootContent;
 
     //private Registry localRegistry;
 
@@ -48,6 +48,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
         this.configReader = new ConfigReader();
         this.mainRoot = configReader.getMainServerRoot();
+        this.mainServerIp = configReader.getMainServerIp();
         this.mainServerPort = configReader.getMainServerPort();
 
         this.openReadOnlyFileMap = new HashMap<>();
@@ -69,7 +70,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
         this.main = this.root.equals(this.mainRoot) && this.serverIp.equals(this.mainServerIp) && this.port == this.mainServerPort;
 
-        rootContent = new File(this.root);
+        this.rootContent = new File(this.root);
 
     }
 
@@ -91,10 +92,10 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             this.port = Integer.parseInt(slaveServer.get("Port"));
         }
 
-        rootContent = new File(this.root);
+        this.rootContent = new File(this.root);
 
     }
-
+/*
     private String splitPathFileOld(String file) {
         int indexPath = file.lastIndexOf(File.separator);
         this.path = file.substring(0, indexPath);
@@ -119,7 +120,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             return  path;
         } else return file;
     }
-
+*/
     /*
         @Override
         public String[] getRegistry(String root) throws RemoteException, NotBoundException {
@@ -145,7 +146,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private String subPath(String[] path){
         return String.join("/", Arrays.copyOfRange(path, 1, path.length));
     }
-
+/*
     private Boolean isPathOwnRoot_old(String path) {
         int indexRoot = path.indexOf(File.separator);
         String root = null;
@@ -153,7 +154,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             root = path.substring(0, indexRoot);
         } else root = path;
         if(root.equals(this.mainRoot)){
-            /*String subPath = path.substring(indexRoot + 1);
+            String subPath = path.substring(indexRoot + 1);
             int indexDir = subPath.indexOf(File.separator);
             String dir = subPath.substring(0, indexDir);
 
@@ -169,7 +170,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                 return false;
             } else {
                 return false;
-            }*/
+            }
             return true;
 
         }
@@ -179,9 +180,9 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private Boolean isPathOwnRoot() {
         return firstSplittedPath[0].equals(this.root);
     }
-
-    private Boolean isFirstChildRemote(String path){
-        Map.Entry<String, Map<String, String>> slaveServer = this.configReader.getSlaveServerByPath(path);
+*/
+    private Boolean isFirstChildRemote(String root){
+        Map.Entry<String, Map<String, String>> slaveServer = this.configReader.getSlaveServerByPath(root);
 
         return slaveServer != null;
     }
@@ -192,53 +193,63 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         else return path;
     }
 
-    private void processPath(String path){
+    private void processPath(String path) throws FileNotFoundException {
         if(path.charAt(0) == ':'){
             path = path.substring(1);
         }
-        this.firstSplittedPath = getRelPath(path).split("/");
+        this.firstSplittedPath = path.split("/");
+        if(!this.firstSplittedPath[0].equals(this.root)){
+            throw new FileNotFoundException(path + " (No such file or directory");
+        }
 
-        if(this.main){
-            this.firstPathLocal = this.root.equals(this.firstSplittedPath[0]);
-        } else this.firstPathLocal = true;
+        if(this.firstSplittedPath.length == 1){
+            this.firstPathLocal = true;
+        } else {
+            this.firstPathLocal = !isFirstChildRemote(this.firstSplittedPath[1]);
+        }
+        //if(this.main){
+        //    this.firstPathLocal = this.root.equals(this.firstSplittedPath[0]);
+        //} else this.firstPathLocal = true;
     }
 
-    private void processPath(String firstPath, String secondPath){
+    private void processPath(String firstPath, String secondPath) throws FileNotFoundException {
         this.processPath(firstPath);
-        if(path.charAt(0) == ':'){
-            path = path.substring(1);
+        if(secondPath.charAt(0) == ':'){
+            secondPath = secondPath.substring(1);
         }
-        this.secondSplittedPath = getRelPath(path).split("/");
+        this.secondSplittedPath = secondPath.split("/");
+        if(!this.secondSplittedPath[0].equals(this.root)){
+            throw new FileNotFoundException(secondPath + " (No such file or directory");
+        }
 
-        if(this.main){
-            this.secondPathLocal = this.root.equals(this.secondSplittedPath[0]);
-        } else this.secondPathLocal = true;
+        if(this.secondSplittedPath.length == 1){
+            this.secondPathLocal = true;
+        } else {
+            this.secondPathLocal = !isFirstChildRemote(this.firstSplittedPath[1]);
+        }
     }
 
     @Override
     public BufferedReader openBufferedReader(String filename) throws IOException, NotBoundException {
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.openBufferedReader(subFilename);
-        } else {
+        if(this.firstPathLocal) {
             //if(this.openReadOnlyFileMap.get(filename) == null) {
             return this.bufferedReader = new BufferedReader(new FileReader(filename));
             //this.openReadOnlyFileMap.put(filename, this.bufferedReader);
             //}
+
+        } else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.openBufferedReader(subFilename);
         }
     }
 
-    @Override
+    @Override //check
     public String readLine(String filename) throws IOException, NotBoundException {
         BufferedReader br = null;
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.readLine(subFilename);
-        } else {
+        if(this.firstPathLocal) {
             if(this.openReadOnlyFileMap.get(filename) == null) {
                 br = new BufferedReader(new FileReader(filename));
                 this.openReadOnlyFileMap.put(filename, br);
@@ -250,6 +261,10 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                 }
                 return line;
             }
+        } else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.readLine(subFilename);
         }
         return null;
     }
@@ -257,26 +272,22 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     @Override
     public void writeLine(String filename, String line) throws IOException, NotBoundException {
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
+        if(this.firstPathLocal) {
+            BufferedWriter br = new BufferedWriter(new FileWriter(filename));
+            br.write(line);
+        } else {
             String subFilename = subPath(this.firstSplittedPath);
             FileServer fileServer = findInterface(this.firstSplittedPath[1]);
             fileServer.writeLine(subFilename, line);
-        } else {
-            BufferedWriter br = new BufferedWriter(new FileWriter(filename));
-            br.write(line);
         }
     }
-
+/*
     @Override
     public List<String> readFile(String filename) throws IOException, NotBoundException {
         List<String> text = null;
         String line;
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.readFile(subFilename);
-        }else {
+        if(this.firstPathLocal) {
             BufferedReader br = this.openReadOnlyFileMap.get(filename);
             if (br != null) {
                 while (true) {
@@ -287,18 +298,19 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                 }
                 return text;
             }
+        }else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.readFile(subFilename);
         }
         return null;
     }
-
+*/
+    @Override //check
     public void writeFile(String filename, List<String> text) throws IOException, NotBoundException {
         BufferedWriter bw = null;
         this.processPath(filename);
-        if(isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            fileServer.writeFile(subFilename, text);
-        }else {
+        if(this.firstPathLocal) {
             filename = this.getRelPath(filename);
             if(this.openWriteFileMap.get(filename) == null) {
                 bw = new BufferedWriter(new FileWriter(filename));
@@ -307,44 +319,47 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             for(String line : text) {
                 bw.write(line);
             }
+        }else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            fileServer.writeFile(subFilename, text);
         }
     }
 
-    @Override
+    @Override // check
     public File[] listFolderContent(String path) throws NotBoundException, RemoteException, NotDirectoryException, FileNotFoundException {
         this.processPath(path);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])){
-            String subPath = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.listFolderContent(subPath);
-        } else {
-            //path = this.getRelPath(path);
+        if(this.firstPathLocal){
             File dir = new File(path);
             if (dir.exists()) {
                 if(dir.isDirectory()) return dir.listFiles();
                 else throw new NotDirectoryException(dir + " (Not a directory");
             } else throw new FileNotFoundException(dir + " (Not a valid path)");
+        } else {
+            String subPath = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.listFolderContent(subPath);
         }
     }
 
-    @Override
+    @Override //check
     public boolean deleteFile(String filename) throws RemoteException, NotBoundException, FileNotFoundException {
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])){
-            String subPath = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.deleteFile(subPath);
-        } else {
+        if(this.firstPathLocal){
             filename = this.getRelPath(filename);
             File file = new File(filename);
             if(!file.exists()){
                 throw new FileNotFoundException(file + " (No such file or directory)");
             }
             return file.delete();
+        } else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.deleteFile(subFilename);
         }
     }
 
-    @Override
+    @Override //check
     public boolean moveFile(String fileFrom, String fileTo) throws IOException, NotBoundException {
         boolean copied = copyFile(fileFrom, fileTo);
         if(copied){
@@ -354,31 +369,11 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         else return false;
     }
 
-    @Override
+    @Override //check
     public boolean copyFile(String filePathFrom, String filePathTo) throws IOException, NotBoundException {
         this.processPath(filePathFrom, filePathTo);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFileFrom = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.copyFile(subFileFrom, filePathTo);
-        } else {
-            if(this.secondSplittedPath.length > 1 && isFirstChildRemote(this.secondSplittedPath[1])){
-                BufferedReader br = this.openReadOnlyFileMap.get(filePathFrom);
-                if (br == null) {
-                    this.bufferedReader = new BufferedReader(new FileReader(filePathFrom));
-                    this.openReadOnlyFileMap.put(filePathFrom, this.bufferedReader);
-                    br = this.bufferedReader;
-                }
-
-                FileServer fileServer = findInterface(this.secondSplittedPath[1]);
-                try {
-                    fileServer.writeLine(subPath(this.secondSplittedPath), br.readLine());
-                    return true;
-                } catch (IOException | NotBoundException e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            } else {
+        if(this.firstPathLocal) {
+            if(this.secondPathLocal){
                 filePathTo = this.getRelPath(filePathTo);
                 Path source = Paths.get(filePathFrom);
 
@@ -389,7 +384,32 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                     Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
                     return true;
                 }
+            } else {
+                /*
+                BufferedReader br = this.openReadOnlyFileMap.get(filePathFrom);
+
+                if (br == null) {
+                    this.bufferedReader = new BufferedReader(new FileReader(filePathFrom));
+                    this.openReadOnlyFileMap.put(filePathFrom, this.bufferedReader);
+                    br = this.bufferedReader;
+                }
+                */
+                FileServer fileServer = findInterface(this.secondSplittedPath[1]);
+                try {
+                    String subFilename = subPath(this.secondSplittedPath);
+                    File fileFrom = new File(filePathFrom.substring(1));
+                    //fileServer.writeLine(subPath(this.secondSplittedPath), br.readLine());
+                    fileServer.writeFileBytes(Files.readAllBytes(fileFrom.toPath()), subFilename);
+                    return true;
+                } catch (IOException | NotBoundException e) {
+                    e.printStackTrace();
+                    return false;
+                }
             }
+        } else {
+            String subFileFrom = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.copyFile(subFileFrom, filePathTo);
         }
     }
 
@@ -422,48 +442,60 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         }
     }
 */
-    @Override
+    @Override //check
     public byte[] getFile(String filename) throws IOException, NotBoundException {
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            fileServer.getFile(subFilename);
-        } else {
+        if(this.firstPathLocal) {
             filename = this.getRelPath(filename);
             Path filePath = Paths.get(filename);
             return Files.readAllBytes(filePath);
+        } else {
+            String subFilename = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            fileServer.getFile(subFilename);
         }
         return null;
     }
 
-    @Override
+    @Override //check
     public void writeFileBytes(byte[] fileBytes, String filename) throws IOException, NotBoundException {
         this.processPath(filename);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
-            String subFileName = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            fileServer.writeFileBytes(fileBytes, subFileName);
-        } else {
+        if(this.firstPathLocal) {
             filename = this.getRelPath(filename);
             File file = new File(filename);
             FileOutputStream fileOutputStream = new FileOutputStream(file);
             fileOutputStream.write(fileBytes);
+        } else {
+            String subFileName = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            fileServer.writeFileBytes(fileBytes, subFileName);
         }
     }
 
 
-    @Override
-    public boolean isDir(String path) throws RemoteException, NotBoundException {
+    @Override //check
+    public boolean isDir(String path) throws RemoteException, NotBoundException, FileNotFoundException {
         this.processPath(path);
-        if(this.firstSplittedPath.length > 1 && isFirstChildRemote(this.firstSplittedPath[1])) {
+        if(this.firstPathLocal) {
+            File file = new File(path);
+            return file.isDirectory();
+        }else {
             String subPath = subPath(this.firstSplittedPath);
             FileServer fileServer = findInterface(this.firstSplittedPath[1]);
             return fileServer.isDir(subPath);
-        }else {
-            path = this.getRelPath(path);
-            File file = new File(path);
-            return file.isDirectory();
+        }
+    }
+
+    @Override
+    public boolean createDir(String path) throws FileNotFoundException, RemoteException, NotBoundException {
+        this.processPath(path);
+        if(this.firstPathLocal){
+            File dir = new File(path);
+            return dir.mkdir();
+        } else {
+            String subPath = subPath(this.firstSplittedPath);
+            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
+            return fileServer.createDir(subPath);
         }
     }
 
@@ -507,7 +539,8 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                 Registry registry = LocateRegistry.createRegistry(fileServerImpl.port);
                 registry.rebind(serverName, fileServerImpl);
 
-                System.out.println(Arrays.toString(registry.list()));
+                System.out.println("Started Server: " + serverName + " (" + fileServerImpl.serverIp + ":" + fileServerImpl.port + ")");
+                System.out.println(("Press CTRL+C to terminate "));
             }
 
             //FileServerImpl.mainRegistry = LocateRegistry.getRegistry(mainServerIp, mainServerPort);
