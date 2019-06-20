@@ -244,7 +244,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
     @Override //check
     public String readLine(String filename) throws IOException, NotBoundException {
-        BufferedReader br = null;
+        BufferedReader br;
         this.processPath(filename);
         if(this.firstPathLocal) {
             if(this.openReadOnlyFileMap.get(filename) == null) {
@@ -305,7 +305,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 */
     @Override //check
     public void writeFile(String filename, List<String> text) throws IOException, NotBoundException {
-        BufferedWriter bw = null;
+        BufferedWriter bw;
         this.processPath(filename);
         if(this.firstPathLocal) {
             filename = this.getRelPath(filename);
@@ -336,16 +336,20 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                         for (File file : files) {
                             String fname = file.getName();
                             if (file.isDirectory()) {
-                                fname += "    dir";
+                                fname += "\t" + "dir";
                             } else {
-                                fname += "    file";
+                                fname += "\t" + "file";
                             }
                             dirContent.add(fname);
                         }
                         if(this.main){
                             List<String> rootNames = configReader.getSlaveRoots();
-                            // List<String> content = new ArrayList<String>(rootNames);
-                            dirContent.addAll(rootNames);
+
+                            for(String name : rootNames){
+                                name += "\t" + "dir";
+                                dirContent.add(name);
+                            }
+                            Collections.sort(dirContent);
                         }
                         return dirContent;
                     }
