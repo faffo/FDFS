@@ -301,9 +301,7 @@ public class Client {
                     }
                 } catch (CommandArgumentNeededException | FileNotFoundException | NoSuchFileException e) {
                     System.out.println(e.getMessage());
-                } catch (NotBoundException | IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
