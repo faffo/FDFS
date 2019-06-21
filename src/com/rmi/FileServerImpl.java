@@ -11,6 +11,9 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
+/**
+ * File Server Implementation class
+ */
 public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private String root;
     private String serverIp;
@@ -40,6 +43,11 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private String[] firstSplittedPath;
     private String[] secondSplittedPath;
 
+    /**
+     * Create FileServerImpl class.
+     * Base constructor invoked by the others. It initializes variables for main server data.
+     * @throws RemoteException
+     */
     public FileServerImpl() throws RemoteException {
         super();
 
@@ -49,8 +57,17 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         this.mainServerPort = configReader.getMainServerPort();
 
         this.openReadOnlyFileMap = new HashMap<>();
+        this.openWriteFileMap = new HashMap<>();
     }
 
+    /**
+     * Constructor that uses provided values to create and start the file server
+     * @param s Server root
+     * @param ip Server IP
+     * @param p Server port
+     * @throws RuntimeException
+     * @throws RemoteException
+     */
     public FileServerImpl(String s, String ip, int p) throws RuntimeException, RemoteException {
         this();
 
@@ -71,6 +88,11 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
     }
 
+    /**
+     * Constructor that start the server reading the data from the config file.
+     * @param serverName The name of the server to start
+     * @throws RemoteException
+     */
     public FileServerImpl(String serverName) throws RemoteException {
         this();
 
@@ -129,8 +151,15 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         }
     */
 
+    /**
+     * Method used to search for the host on which runs the file server of a given root.
+     * @param path The root of the server searched
+     * @return The FileServer interface of the requested server
+     * @throws RemoteException
+     * @throws NotBoundException
+     */
     private FileServer findInterface(String path) throws RemoteException, NotBoundException {
-        Map.Entry<String, Map<String, String>> server = this.configReader.getSlaveServerByPath(path);
+        Map.Entry<String, Map<String, String>> server = this.configReader.getSlaveServerByRoot(path);
         String serverName = server.getKey();
         Map<String, String> values = server.getValue();
 
@@ -140,6 +169,12 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         return (FileServer) registry.lookup(serverName);
     }
 
+    /**
+     * Removes the first element (if present) of the path from the input path.
+     * Used by the main server to pass the relative path to the slave server.
+     * @param path The path in input (String[])
+     * @return The sub path obtained (String)
+     */
     private String subPath(String[] path){
         return String.join("/", Arrays.copyOfRange(path, 1, path.length));
     }
@@ -178,18 +213,32 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         return firstSplittedPath[0].equals(this.root);
     }
 */
+
+    /**
+     * Method to check if first element after the root is a remote root. This is used to decide if the server must pass the request or if it must be run locally
+     * @param root Element to be checked
+     * @return
+     */
     private Boolean isFirstChildRemote(String root){
-        Map.Entry<String, Map<String, String>> slaveServer = this.configReader.getSlaveServerByPath(root);
+        Map.Entry<String, Map<String, String>> slaveServer = this.configReader.getSlaveServerByRoot(root);
 
         return slaveServer != null;
     }
 
+/*
     private String getRelPath(String path) {
         int index = path.indexOf(':');
         if (index != -1) return path.replaceFirst(":", "");
         else return path;
     }
+*/
 
+    /**
+     * Invoked first with each call of rmi methods. Process the filename/path given as parameter and process them for usage by the methods.
+     * It also checks if the path requested is local or remote
+     * @param path Path to be processed
+     * @throws FileNotFoundException
+     */
     private void processPath(String path) throws FileNotFoundException {
         if(path.charAt(0) == ':'){
             path = path.substring(1);
@@ -209,6 +258,13 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         //} else this.firstPathLocal = true;
     }
 
+    /**
+     * Invoked first with each call of rmi methods. Process the filenames/paths given as parameters and process them for usage by the methods.
+     * It also checks if the paths requested are local or remote
+     * @param firstPath First path to be processed
+     * @param secondPath Secondo path to be processed
+     * @throws FileNotFoundException
+     */
     private void processPath(String firstPath, String secondPath) throws FileNotFoundException {
         this.processPath(firstPath);
         if(secondPath.charAt(0) == ':'){
@@ -308,14 +364,16 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         BufferedWriter bw;
         this.processPath(filename);
         if(this.firstPathLocal) {
-            filename = this.getRelPath(filename);
             if(this.openWriteFileMap.get(filename) == null) {
                 bw = new BufferedWriter(new FileWriter(filename));
                 this.openWriteFileMap.put(filename, bw);
             } else bw = openWriteFileMap.get(filename);
+
             for(String line : text) {
                 bw.write(line);
+                bw.newLine();
             }
+            bw.close();
         }else {
             String subFilename = subPath(this.firstSplittedPath);
             FileServer fileServer = findInterface(this.firstSplittedPath[1]);
@@ -335,9 +393,9 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                     if(files!=null){
                         for (File file : files) {
                             String fname = file.getName();
-                            String tabs = "\t";
-                            if(fname.length()<=8){
-                                tabs = "\t\t";
+                            String tabs = "\t\t";
+                            if(fname.length()<8){
+                                tabs = "\t\t\t";
                             }
                             if (file.isDirectory()) {
                                 fname += tabs + "dir";
@@ -350,9 +408,9 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                             List<String> rootNames = configReader.getSlaveRoots();
 
                             for(String name : rootNames){
-                                String tabs = "\t";
-                                if(name.length()<=8){
-                                    tabs = "\t\t";
+                                String tabs = "\t\t";
+                                if(name.length()<8){
+                                    tabs = "\t\t\t";
                                 }
                                 name += tabs + "dir";
                                 dirContent.add(name);
@@ -378,7 +436,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     public boolean deleteFile(String filename) throws RemoteException, NotBoundException, FileNotFoundException {
         this.processPath(filename);
         if(this.firstPathLocal){
-            filename = this.getRelPath(filename);
+            //filename = this.getRelPath(filename);
             File file = new File(filename);
             if(!file.exists()){
                 throw new FileNotFoundException(file + " (No such file or directory)");
@@ -406,7 +464,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         this.processPath(filePathFrom, filePathTo);
         if(this.firstPathLocal) {
             if(this.secondPathLocal){
-                filePathTo = this.getRelPath(filePathTo);
+                //filePathTo = this.getRelPath(filePathTo);
                 Path source = Paths.get(filePathFrom);
 
                 if(!Files.exists(source)){
@@ -478,7 +536,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     public byte[] getFile(String filename) throws IOException, NotBoundException {
         this.processPath(filename);
         if(this.firstPathLocal) {
-            filename = this.getRelPath(filename);
+            //filename = this.getRelPath(filename);
             Path filePath = Paths.get(filename);
             return Files.readAllBytes(filePath);
         } else {
@@ -493,7 +551,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     public void writeFileBytes(byte[] fileBytes, String filename) throws IOException, NotBoundException {
         this.processPath(filename);
         if(this.firstPathLocal) {
-            filename = this.getRelPath(filename);
+            //filename = this.getRelPath(filename);
             File file = new File(filename);
             FileOutputStream fileOutputStream = new FileOutputStream(file);
             fileOutputStream.write(fileBytes);
@@ -531,6 +589,10 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         }
     }
 
+    /**
+     * Starts File Server Implementation. It can take 1 or 3 arguments.
+     * @param args If only one arguments is provided it checks server name from configuration file and starts with corresponding values. If 3 arguments are provided they are intended as ServerRoot, ServerIP, ServerPort
+     */
     public static void main(String[] args) {
         //ConfigReader configReader = new ConfigReader();
         //String mainRoot = configReader.getMainServerRoot();

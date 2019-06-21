@@ -1,10 +1,8 @@
 #! /bin/bash
 
 IPADDRESS=$( hostname --ip-address)
-export CLASSPATH=$CLASSPATH:..:.:/home/faffo/IdeaProjects/FDFS/out/production/FDFS
+export CLASSPATH=$CLASSPATH:..:.:/mnt/c/Users/daniele.ruffini/IdeaProjects/FDFS/out/production/FDFS
 
-#java -Djava.security.policy=local.java.policy -classpath /home/faffo/IdeaProjects/FDFS/out/production/FDFS -Djava.rmi.server.hostname=$IPADDRESS com.rmi.FDFS.FileServerImpl $1
+#java -Djava.security.policy=local.java.policy -classpath /mnt/c/Users/daniele.ruffini/IdeaProjects/FDFS/out/production/FDFS -Djava.rmi.server.hostname=$IPADDRESS com.rmi.FDFS.FileServerImpl $1
 
 java  -Djava.security.policy=local.java.policy -Djava.rmi.server.hostname=$IPADDRESS com.rmi.FileServerImpl $1
-
-

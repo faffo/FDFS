@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class used to read from the configuration files.
+ */
 public class ConfigReader {
     private String cfg_name;
     private FileReader cfg;
@@ -20,6 +23,10 @@ public class ConfigReader {
 
     private String[] slaveRoots;
 
+    /**
+     * Constructor of the class. It takes a String representing the config file to be read.
+     * @param cfg_name The configuration file
+     */
     public ConfigReader(String cfg_name) {
         //cfg_name = "cfg/server.cfg";
         slaveServersMap = new HashMap<>();
@@ -77,28 +84,53 @@ public class ConfigReader {
         }
     }
 
+    /**
+     *  Secondary constructor that provides a default file name for the configuration file.
+     */
     public ConfigReader() {
         this("cfg/server.cfg");
     }
 
+    /**
+     * Getter for the main server root
+     * @return Main server root
+     */
     public String getMainServerRoot() {
         return mainServerRoot;
     }
 
+    /**
+     *  Getter for the main server IP
+     * @return Main server IP
+     */
     public String getMainServerIp() {
         return mainServerIp;
     }
 
+    /**
+     * Getter for the main server port
+     * @return Main server port
+     */
     public int getMainServerPort() {
         return mainServerPort;
     }
 
+    /**
+     * Method that returns a Map containing a slave server corresponding to the name given as parameter
+     * @param server Slave server name
+     * @return Slave server map (root, ip, port)
+     */
     public Map<String, String> getSlaveServerByName(String server){
-        Map<String, String> map = slaveServersMap.get(server);
+        //Map<String, String> map = slaveServersMap.get(server);
         return slaveServersMap.get(server);
     }
 
-    public Map.Entry<String, Map<String, String>> getSlaveServerByPath(String path){
+    /**
+     * Method that returns a Map containing a slave server corresponding to the root given as parameter
+     * @param path Slave server root
+     * @return Slave server map (root, ip, port)
+     */
+    public Map.Entry<String, Map<String, String>> getSlaveServerByRoot(String path){
         for(Map.Entry<String, Map<String, String>> entry : slaveServersMap.entrySet()) {
             Map<String, String> values = entry.getValue();
             if (path.equals(values.get("Root"))){
@@ -109,6 +141,10 @@ public class ConfigReader {
         return null;
     }
 
+    /**
+     * Method that return the list of all the roots of the slave servers in FDFS
+     * @return List of slave roots.
+     */
     public ArrayList<String> getSlaveRoots(){
         ArrayList<String> slaveRoots = new ArrayList<>();
         for(Map.Entry<String, Map<String, String>> entry : slaveServersMap.entrySet()) {

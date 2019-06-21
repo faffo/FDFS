@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -19,6 +20,9 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 
+/**
+ * Class representing the client connection to the RMI server
+ */
 public class Client {
     String mainRoot;
     String mainServerIp;
@@ -30,6 +34,9 @@ public class Client {
     Registry registry = null;
     FileServer fileServer = null;
 
+    /**
+     * Default constructor for the client class.
+     */
     private Client() {
         ConfigReader configReader = new ConfigReader("cfg/client.cfg");
         this.mainRoot = configReader.getMainServerRoot();
@@ -37,11 +44,18 @@ public class Client {
         this.mainServerPort = configReader.getMainServerPort();
     }
 
+    /**
+     * Main class starting the client. No argument is needed
+     * @param args
+     */
     public static void main(String args[]) {
         Client client = new Client();
         client.clientConsole();
     }
 
+    /**
+     * Function for displaying the help message with the client commands.
+     */
     private void helpMessage() {
         System.out.println("\n### Legenda ##################################################################################\n" +
                 "## start                               -       Start connection with main server\n" +
@@ -58,6 +72,12 @@ public class Client {
                 "#############################################################################################\n\n");
     }
 
+    /**
+     * Function to logout from the current connection.
+     * If already disconnected it exits the program.
+     * The connection is in fact virtual. All it does it's deleting the data regarding the main server (the only one the client knows about)
+     * and permitting to re-register it later.
+     */
     private void logout() {
         if (this.connectionStatus) {
             this.connectionStatus = false;
@@ -69,6 +89,9 @@ public class Client {
         }
     }
 
+    /**
+     * Main function to handle client commands.
+     */
     private void clientConsole() {
         System.out.println("#################\n" +
                 "# Welcome to FDFS\n" +
@@ -296,21 +319,36 @@ public class Client {
                     }
                 } catch (CommandArgumentNeededException | FileNotFoundException | NoSuchFileException e) {
                     System.out.println(e.getMessage());
-                } catch (Exception e) {
+                }
+                catch (ConnectException e){
+                    e.printStackTrace();
+                    this.logout();
+                }
+                catch (Exception e) {
                     e.printStackTrace();
                 }
-
-
             }
         }
 
     }
 
+    /**
+     * Used to translate any path given by the user.
+     * FDFS utilizes ":" as the root indicator and any filepath starting without it are interpreted as relative to the present working directory
+     * This function ensures that the filepath passed to the file server is always absolute.
+     * @param argument the filepath
+     * @return return the absolute filepath
+     */
     private String getAbsolutePath(String argument) {
         if (argument.startsWith(":")) return argument.substring(1);
         else return this.pwd.concat("/").concat(argument);
     }
 
+    /**
+     * Given a filename complete with its filepath, it returns the file name alone.-*
+     * @param file
+     * @return
+     */
     private String getFileName(String file) {
         int index = file.lastIndexOf('/');
         return file.substring(index + 1);

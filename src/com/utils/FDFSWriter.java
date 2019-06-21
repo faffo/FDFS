@@ -6,9 +6,15 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class used to create a simple program of video writing
+ */
 public class FDFSWriter implements Runnable{
     private List<String> content = new ArrayList<>();
 
+    /**
+     * Constructor of the video writer. It also provides a really slim console interface
+     */
     public FDFSWriter() {
         System.out.println("#### FDFS File Writer" +
                 "## Write the desired text" +
@@ -27,9 +33,12 @@ public class FDFSWriter implements Runnable{
 
     @Override
     public void run() {
-
     }
 
+    /**
+     * Get the content written with FDFSWriter
+     * @return The contente written
+     */
     public List<String> getContent() {
         return content;
     }
