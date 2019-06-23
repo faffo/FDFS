@@ -25,7 +25,6 @@ public interface FileServer extends Remote {
      * @throws NotBoundException
      */
     String readLine(String filename) throws IOException, NotBoundException;
-    //List<String> readFile(String filename) throws IOException, NotBoundException;
 
     /**
      * Writes a single line to the filename porovided as parameter. It overwrites an existing file with the same name
@@ -99,7 +98,6 @@ public interface FileServer extends Remote {
      * @throws NotBoundException
      */
     boolean moveFile(String fileFrom, String fileTo) throws IOException, NotBoundException;
-    //void renameFile(String oldFname, String newFname) throws NotBoundException, FileNotFoundException, FileAlreadyExistsException, RemoteException;
 
     /**
      * Retrive a file as an array of bytes. Utilizes {@link java.nio.file.Files#readAllBytes(Path)}
@@ -138,5 +136,4 @@ public interface FileServer extends Remote {
      * @throws NotBoundException
      */
     boolean createDir(String dir) throws FileNotFoundException, RemoteException, NotBoundException;
-    //String[] getRegistry(String root) throws RemoteException, NotBoundException;
 }

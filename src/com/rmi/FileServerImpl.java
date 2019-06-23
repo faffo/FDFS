@@ -84,7 +84,11 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
 
         this.main = this.root.equals(this.mainRoot) && this.serverIp.equals(this.mainServerIp) && this.port == this.mainServerPort;
 
-        this.rootContent = new File(this.root);
+        try {
+            this.rootContent = new File(this.root);
+        } catch (NullPointerException e){
+            System.out.println("Invalid root configuration");
+        }
 
     }
 
@@ -109,47 +113,18 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             this.root = slaveServer.get("Root");
             this.serverIp = slaveServer.get("Ip");
             this.port = Integer.parseInt(slaveServer.get("Port"));
+        } else{
+            throw new IllegalArgumentException("Invalid server name.");
         }
 
-        this.rootContent = new File(this.root);
-
-    }
-/*
-    private String splitPathFileOld(String file) {
-        int indexPath = file.lastIndexOf(File.separator);
-        this.path = file.substring(0, indexPath);
-        this.fname = file.substring(indexPath + 1);
-
-        //int indexRoot = file.indexOf(File.separator);
-        //return file.substring(0, indexRoot);
-
-        return  this.path;
-
-    }
-
-    private String splitPathFile(String file) {
-        int indexPath = file.lastIndexOf(File.separator);
-        if(indexPath > -1){
-            path = file.substring(0, indexPath);
-            this.fname = file.substring(indexPath + 1);
-
-            //int indexRoot = file.indexOf(File.separator);
-            //return file.substring(0, indexRoot);
-
-            return  path;
-        } else return file;
-    }
-*/
-    /*
-        @Override
-        public String[] getRegistry(String root) throws RemoteException, NotBoundException {
-            if(isPathOwnRoot(root)) return this.localRegistry.list();
-            else{
-                FileServer fileServer = findInterface(root);
-                return fileServer.getRegistry(root);
-            }
+        try {
+            this.rootContent = new File(this.root);
+        } catch (NullPointerException e){
+            System.out.println("Invalid root configuration");
         }
-    */
+
+    }
+
 
     /**
      * Method used to search for the host on which runs the file server of a given root.
@@ -178,41 +153,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
     private String subPath(String[] path){
         return String.join("/", Arrays.copyOfRange(path, 1, path.length));
     }
-/*
-    private Boolean isPathOwnRoot_old(String path) {
-        int indexRoot = path.indexOf(File.separator);
-        String root = null;
-        if(indexRoot != -1){
-            root = path.substring(0, indexRoot);
-        } else root = path;
-        if(root.equals(this.mainRoot)){
-            String subPath = path.substring(indexRoot + 1);
-            int indexDir = subPath.indexOf(File.separator);
-            String dir = subPath.substring(0, indexDir);
 
-            File[] dirContent = new File(subPath).listFiles();
-            if (dirContent != null) {
-                for(File file : dirContent){
-                    if (file.isDirectory()) {
-                        if(dir.equals(file.getName())){
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            } else {
-                return false;
-            }
-            return true;
-
-        }
-        else return false;
-    }
-
-    private Boolean isPathOwnRoot() {
-        return firstSplittedPath[0].equals(this.root);
-    }
-*/
 
     /**
      * Method to check if first element after the root is a remote root. This is used to decide if the server must pass the request or if it must be run locally
@@ -225,13 +166,6 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         return slaveServer != null;
     }
 
-/*
-    private String getRelPath(String path) {
-        int index = path.indexOf(':');
-        if (index != -1) return path.replaceFirst(":", "");
-        else return path;
-    }
-*/
 
     /**
      * Invoked first with each call of rmi methods. Process the filename/path given as parameter and process them for usage by the methods.
@@ -334,31 +268,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
             fileServer.writeLine(subFilename, line);
         }
     }
-/*
-    @Override
-    public List<String> readFile(String filename) throws IOException, NotBoundException {
-        List<String> text = null;
-        String line;
-        this.processPath(filename);
-        if(this.firstPathLocal) {
-            BufferedReader br = this.openReadOnlyFileMap.get(filename);
-            if (br != null) {
-                while (true) {
-                    line = br.readLine();
-                    if (line != null) {
-                        text.add(line);
-                    } else break;
-                }
-                return text;
-            }
-        }else {
-            String subFilename = subPath(this.firstSplittedPath);
-            FileServer fileServer = findInterface(this.firstSplittedPath[1]);
-            return fileServer.readFile(subFilename);
-        }
-        return null;
-    }
-*/
+
     @Override //check
     public void writeFile(String filename, List<String> text) throws IOException, NotBoundException {
         BufferedWriter bw;
@@ -503,35 +413,7 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
         }
     }
 
-    /*
-    @Override
-    public void renameFile(String oldFname, String newFname) throws NotBoundException, FileNotFoundException, FileAlreadyExistsException, RemoteException {
-        String path = this.splitPathFile(oldFname);
-        if (isPathOwnRoot(path)){
-            oldFname = this.getRelPath(oldFname);
-            if(newFname.contains("/")){
-                String newPath = this.splitPathFile(newFname);
-                if(!path.equals(newPath)){
-                    throw new FileNotFoundException(newFname + " (new name must be on same directory)");
-                }
-            }
-            File fileOld = new File(oldFname);
-            File fileNew = new File(newFname);
-            if(!fileOld.exists()){
-                throw new FileNotFoundException(fileOld + " (No such file or directory)");
-            }
-            if(fileNew.exists()){
-                throw new FileAlreadyExistsException(fileNew + " (New filename already exists)");
-            }
-            fileOld.renameTo(fileNew);
-        } else {
-            String subPath = subPath(path);
-            String subFilename = subPath(oldFname);
-            FileServer fileServer = findInterface(subPath);
-            fileServer.renameFile(subFilename, newFname);
-        }
-    }
-*/
+
     @Override //check
     public byte[] getFile(String filename) throws IOException, NotBoundException {
         this.processPath(filename);
@@ -617,13 +499,12 @@ public class FileServerImpl extends UnicastRemoteObject implements FileServer {
                     String ip = args[1];
                     int port = Integer.parseInt(args[2]);
                     fileServerImpl = new FileServerImpl(root, ip, port);
-
                     break;
                 }
                 default:
                     try {
-                        throw new IllegalAccessException("Numero di argomenti errato");
-                    } catch (IllegalAccessException e) {
+                        throw new IllegalArgumentException("Numero di argomenti errato");
+                    } catch (IllegalArgumentException e) {
                         e.printStackTrace();
                     }
                     break;
